@@ -103,9 +103,3 @@ docker-compose up --build
 - 同时输出到控制台和文件，便于调试和生产监控
 
 ---
-
-don't deal 
-
-1. openrouter raise 503 sometimes
-2. sometimes don't work return nothing
-if the free model is bad maybe we need to change another one
