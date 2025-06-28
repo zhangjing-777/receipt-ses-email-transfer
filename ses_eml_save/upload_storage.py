@@ -20,7 +20,11 @@ def upload_attachments_to_storage(att, bucket="lazy-receipt"):
     try:
         filename = att["filename"]
         safe_filename = make_safe_storage_path(filename)
-        binary_data = base64.b64decode(att["binary"])
+        binary = att["binary"]
+        if isinstance(binary, str):
+            binary_data = base64.b64decode(binary)
+        else:
+            binary_data = binary  # 已经是 bytes
 
         date_url = datetime.utcnow().date().isoformat()
         timestamp = datetime.utcnow().isoformat()
