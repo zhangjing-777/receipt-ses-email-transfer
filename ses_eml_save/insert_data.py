@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class ReceiptDataPreparer:
-    def __init__(self, fields: str, raw_attachments: Dict[str, Any], public_url: str, ocr: str):
+    def __init__(self, user_id, fields: str, raw_attachments: Dict[str, Any], public_url: str, ocr: str):
         self.fields = fields
         self.raw_attachments = raw_attachments
         self.public_url = public_url
@@ -21,14 +21,10 @@ class ReceiptDataPreparer:
         self.record_id = str(uuid.uuid4())
 
         # 用户名 = 邮箱前缀
-        self.user_id = self.extract_user_id(raw_attachments.get("to_email", ""))
+        self.user_id = user_id
 
         # 解析字段
         self.items = self.parse_fields()
-
-    def extract_user_id(self, email: str) -> str:
-        """从邮箱中提取用户ID（@前缀）"""
-        return email.split("@")[0] if email and "@" in email else "unknown_user"
 
     def parse_fields(self) -> Dict[str, Any]:
         """清洗字段并返回 dict"""

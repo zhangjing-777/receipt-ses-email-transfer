@@ -19,7 +19,7 @@ supabase: Client = create_client(url, key)
 logger = logging.getLogger(__name__)
 
 
-def upload_to_supabase(bucket, key):
+def upload_to_supabase(bucket, key, user_id):
     logger.info(f"Starting upload_to_supabase for bucket={bucket}, key={key}")
     try:
         eml_bytes=load_s3(bucket, key)
@@ -52,7 +52,7 @@ def upload_to_supabase(bucket, key):
             fields = extract_fields_from_ocr(ocr)
             logger.info("Extracted fields from OCR.")
 
-            preparer = ReceiptDataPreparer(fields, raw_attachments, public_url, ocr)
+            preparer = ReceiptDataPreparer(user_id, fields, raw_attachments, public_url, ocr)
             receipt_row = preparer.build_receipt_data()
             eml_row = preparer.build_eml_data(bucket+'/'+key)
             supabase.table("receipt_items_cleaned").insert(receipt_row).execute()

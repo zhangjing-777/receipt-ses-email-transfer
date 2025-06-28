@@ -67,8 +67,9 @@ async def ses_email_transfer(request: Request):
             raise HTTPException(status_code=400, detail="Invalid SNS message format")
 
         try:
-            s3_bucket = message["receipt"]["action"]["bucketName"]
-            s3_key = message["receipt"]["action"]["objectKey"]
+            s3_bucket = message["bucket"]
+            s3_key = message["key"]
+            user_id = message.get("user_id", "unknown")
             logger.info(f"Extracted S3 info - Bucket: {s3_bucket}, Key: {s3_key}")
         except KeyError as e:
             logger.exception(f"Missing required fields in SNS message: {str(e)}")
@@ -76,7 +77,7 @@ async def ses_email_transfer(request: Request):
 
         try:
             logger.info(f"Starting upload process for bucket: {s3_bucket}, key: {s3_key}")
-            result = upload_to_supabase(s3_bucket, s3_key)
+            result = upload_to_supabase(s3_bucket, s3_key, user_id)
             logger.info(f"Upload process completed: {result}")
             return {"message": "Email processed successfully", "result": result, "status": "success"}
         except Exception as e:
