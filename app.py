@@ -31,11 +31,11 @@ async def health_check():
 
 # 拉取 S3 并转发给supabase
 @app.post("/webhook/ses-email-transfer")
-async def ses_email_transfer(req):
+async def ses_email_transfer(bucket, key, user_id):
     logger.info("Received webhook request")
-    bucket = str(req.bucket)
-    key = str(req.key)
-    user_id = str(req.user_id)
+    bucket = str(bucket)
+    key = str(key)
+    user_id = str(user_id)
     try:
         logger.info(f"Starting upload process for bucket: {bucket}, key: {key}, user_id: {user_id}")
         result = await upload_to_supabase(bucket, key, user_id)
