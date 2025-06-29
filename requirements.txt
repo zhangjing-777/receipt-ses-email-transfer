@@ -7,4 +7,6 @@ pypinyin
 requests
 fastapi
 uvicorn
+playwright
+beautifulsoup4
 

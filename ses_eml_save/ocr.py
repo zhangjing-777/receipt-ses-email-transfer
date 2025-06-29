@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 MODEL = os.getenv("MODEL")
+MODEL_FREE = os.getenv("MODEL_FREE")
 OPENROUTER_URL = os.getenv("OPENROUTER_URL") or ""
 
 HEADERS = {
@@ -21,7 +22,6 @@ HEADERS = {
 
 
 def openrouter_image_ocr(file_url):
-
     messages = [
         {
             "role": "user",
@@ -39,11 +39,15 @@ def openrouter_image_ocr(file_url):
             ]
         }
     ]
+    
+    # 先尝试使用 MODEL_FREE
     payload = {
-        "model": MODEL,
+        "model": MODEL_FREE,
         "messages": messages
     }
+    
     try:
+        logger.info(f"Trying image OCR with MODEL_FREE: {MODEL_FREE}")
         response = requests.post(OPENROUTER_URL, headers=HEADERS, json=payload)
         response.raise_for_status()
         response_data = response.json()
@@ -51,17 +55,41 @@ def openrouter_image_ocr(file_url):
         # 记录 token 使用量
         if "usage" in response_data:
             usage = response_data["usage"]
-            logger.info(f"Image OCR token usage - Prompt: {usage.get('prompt_tokens', 'N/A')}, "
+            logger.info(f"Image OCR token usage (MODEL_FREE) - Prompt: {usage.get('prompt_tokens', 'N/A')}, "
                        f"Completion: {usage.get('completion_tokens', 'N/A')}, "
                        f"Total: {usage.get('total_tokens', 'N/A')}")
         else:
             logger.warning("No usage information found in OpenRouter response")
         
-        logger.info(f"Image OCR API response: {response.status_code}")
+        logger.info(f"Image OCR API response (MODEL_FREE): {response.status_code}")
         return response_data["choices"][0]["message"]["content"]
+        
     except Exception as e:
-        logger.exception(f"Image OCR failed: {str(e)}")
-        raise
+        logger.warning(f"MODEL_FREE failed, trying MODEL: {str(e)}")
+        
+        # 如果 MODEL_FREE 失败，尝试使用 MODEL
+        payload["model"] = MODEL
+        try:
+            logger.info(f"Trying image OCR with MODEL: {MODEL}")
+            response = requests.post(OPENROUTER_URL, headers=HEADERS, json=payload)
+            response.raise_for_status()
+            response_data = response.json()
+            
+            # 记录 token 使用量
+            if "usage" in response_data:
+                usage = response_data["usage"]
+                logger.info(f"Image OCR token usage (MODEL) - Prompt: {usage.get('prompt_tokens', 'N/A')}, "
+                           f"Completion: {usage.get('completion_tokens', 'N/A')}, "
+                           f"Total: {usage.get('total_tokens', 'N/A')}")
+            else:
+                logger.warning("No usage information found in OpenRouter response")
+            
+            logger.info(f"Image OCR API response (MODEL): {response.status_code}")
+            return response_data["choices"][0]["message"]["content"]
+            
+        except Exception as e2:
+            logger.exception(f"Both MODEL_FREE and MODEL failed for image OCR: {str(e2)}")
+            raise
 
 def openrouter_pdf_ocr(file_url):
     logger.info(f"Starting PDF OCR for: {file_url}")
@@ -96,29 +124,61 @@ def openrouter_pdf_ocr(file_url):
                 }
             }
         ]
+        
+        # 先尝试使用 MODEL_FREE
         payload = {
-            "model": MODEL,
+            "model": MODEL_FREE,
             "messages": messages,
             "plugins": plugins
         }
-        response = requests.post(OPENROUTER_URL, headers=HEADERS, json=payload)
-        response.raise_for_status()
-        response_data = response.json()
         
-        # 记录 token 使用量
-        if "usage" in response_data:
-            usage = response_data["usage"]
-            logger.info(f"PDF OCR token usage - Prompt: {usage.get('prompt_tokens', 'N/A')}, "
-                       f"Completion: {usage.get('completion_tokens', 'N/A')}, "
-                       f"Total: {usage.get('total_tokens', 'N/A')}")
-        else:
-            logger.warning("No usage information found in OpenRouter response")
-        
-        logger.info(f"PDF OCR API response: {response.status_code}")
-        return response_data["choices"][0]["message"]["content"]
+        try:
+            logger.info(f"Trying PDF OCR with MODEL_FREE: {MODEL_FREE}")
+            response = requests.post(OPENROUTER_URL, headers=HEADERS, json=payload)
+            response.raise_for_status()
+            response_data = response.json()
+            
+            # 记录 token 使用量
+            if "usage" in response_data:
+                usage = response_data["usage"]
+                logger.info(f"PDF OCR token usage (MODEL_FREE) - Prompt: {usage.get('prompt_tokens', 'N/A')}, "
+                           f"Completion: {usage.get('completion_tokens', 'N/A')}, "
+                           f"Total: {usage.get('total_tokens', 'N/A')}")
+            else:
+                logger.warning("No usage information found in OpenRouter response")
+            
+            logger.info(f"PDF OCR API response (MODEL_FREE): {response.status_code}")
+            return response_data["choices"][0]["message"]["content"]
+            
+        except Exception as e:
+            logger.warning(f"MODEL_FREE failed, trying MODEL: {str(e)}")
+            
+            # 如果 MODEL_FREE 失败，尝试使用 MODEL
+            payload["model"] = MODEL
+            try:
+                logger.info(f"Trying PDF OCR with MODEL: {MODEL}")
+                response = requests.post(OPENROUTER_URL, headers=HEADERS, json=payload)
+                response.raise_for_status()
+                response_data = response.json()
+                
+                # 记录 token 使用量
+                if "usage" in response_data:
+                    usage = response_data["usage"]
+                    logger.info(f"PDF OCR token usage (MODEL) - Prompt: {usage.get('prompt_tokens', 'N/A')}, "
+                               f"Completion: {usage.get('completion_tokens', 'N/A')}, "
+                               f"Total: {usage.get('total_tokens', 'N/A')}")
+                else:
+                    logger.warning("No usage information found in OpenRouter response")
+                
+                logger.info(f"PDF OCR API response (MODEL): {response.status_code}")
+                return response_data["choices"][0]["message"]["content"]
+                
+            except Exception as e2:
+                logger.exception(f"Both MODEL_FREE and MODEL failed for PDF OCR: {str(e2)}")
+                raise
+                
     except Exception as e:
         logger.exception(f"PDF OCR failed: {str(e)}")
-        return response_data
         raise
 
 def ocr_attachment(file_url) -> str:
@@ -194,6 +254,7 @@ def extract_fields_from_ocr(text):
             logger.info(f"Deepseek field extraction token usage - Prompt: {usage.get('prompt_tokens', 'N/A')}, "
                        f"Completion: {usage.get('completion_tokens', 'N/A')}, "
                        f"Total: {usage.get('total_tokens', 'N/A')}")
+            print(f"Total: {usage.get('total_tokens', 'N/A')}")
         else:
             logger.warning("No usage information found in Deepseek response")
         

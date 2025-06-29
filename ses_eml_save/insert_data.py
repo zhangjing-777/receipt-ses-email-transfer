@@ -37,6 +37,7 @@ class ReceiptDataPreparer:
 
         # 生成 hash_id，防重复
         hash_input = "|".join([
+            str(self.user_id),
             str(items.get("invoice_total", "")),
             str(items.get("buyer", "")),
             str(items.get("seller", "")),
