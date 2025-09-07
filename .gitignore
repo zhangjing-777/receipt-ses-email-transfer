@@ -47,3 +47,5 @@ htmlcov/
 .cache/
 .coverage
 coverage.xml
+
+*.ipynb

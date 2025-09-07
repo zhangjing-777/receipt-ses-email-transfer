@@ -9,6 +9,7 @@ from ses_eml_save.ocr import ocr_attachment, extract_fields_from_ocr
 from ses_eml_save.attachment_upload import upload_attachments_to_storage
 from ses_eml_save.string_to_image_upload import render_html_string_to_image_and_upload
 from ses_eml_save.link_upload import extract_pdf_invoice_urls, upload_invoice_pdf_to_supabase
+from ses_eml_save.prc import insert_receipt_item_cleaned, insert_ses_eml_info
 
 
 load_dotenv()
@@ -82,9 +83,9 @@ async def upload_to_supabase(bucket, key, user_id):
                 logger.info(f"Data preparation completed for {filename}")
 
                 logger.info(f"Inserting receipt_items_cleaned for {filename}...")
-                supabase.table("receipt_items_cleaned").insert(receipt_row).execute()
+                insert_receipt_item_cleaned(**receipt_row)
                 logger.info(f"Inserting ses_eml_info for {filename}...")
-                supabase.table("ses_eml_info").insert(eml_row).execute()
+                insert_ses_eml_info(**eml_row)
                 logger.info(f"Successfully inserted data for {filename}")
 
                 successes.append(filename)
