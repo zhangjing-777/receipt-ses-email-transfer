@@ -16,13 +16,13 @@ logger = logging.getLogger(__name__)
 # Supabase config
 SUPABASE_URL = os.getenv("SUPABASE_URL") or ""
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or ""
-SUPABASE_BUCKET = "lazy-receipt"
+SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 
-async def render_html_string_to_image_and_upload(html_string: str, filename: str) -> dict:
+async def render_html_string_to_image_and_upload(html_string: str, user_id:str, filename: str) -> dict:
     logger.info(f"Starting HTML to image conversion for filename: {filename}")
     
     # 生成唯一文件名
@@ -44,7 +44,7 @@ async def render_html_string_to_image_and_upload(html_string: str, filename: str
         logger.info(f"Screenshot saved to local file: {image_file}")
 
         # 上传至 Supabase Storage
-        storage_path = f"{datetime.utcnow().date().isoformat()}/{image_file}"
+        storage_path = f"users/{user_id}/{datetime.utcnow().date().isoformat()}/{image_file}"
         logger.info(f"Uploading image to Supabase Storage: {storage_path}")
         
         with open(image_file, "rb") as f:
@@ -55,15 +55,17 @@ async def render_html_string_to_image_and_upload(html_string: str, filename: str
         logger.info("Image uploaded successfully to Supabase Storage")
 
         # 获取公开 URL
-        public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(storage_path).rstrip('?')
-        logger.info(f"Generated public URL: {public_url}")
+        #public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(storage_path).rstrip('?')
+        #logger.info(f"Generated public URL: {public_url}")
+        signed_url_result = supabase.storage.from_(SUPABASE_BUCKET).create_signed_url(storage_path, expires_in=86400)
+        public_url = signed_url_result["signedURL"]
 
         # 清理本地临时文件
         os.remove(image_file)
         logger.info(f"Local temporary file removed: {image_file}")
         
         public_urls = {}
-        public_urls[filename] = public_url
+        public_urls[filename] = [public_url,storage_path]
         logger.info(f"HTML to image conversion completed successfully for: {filename}")
         return public_urls
         

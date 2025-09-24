@@ -17,6 +17,7 @@ venv/
 Thumbs.db
 
 # Logs
+logs/
 *.log
 
 # Docker
@@ -47,3 +48,5 @@ htmlcov/
 .cache/
 .coverage
 coverage.xml
+
+*.ipynb

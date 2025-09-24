@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # Supabase config
 SUPABASE_URL = os.getenv("SUPABASE_URL") or ""
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or ""
-SUPABASE_BUCKET = "lazy-receipt"
+SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -29,7 +29,7 @@ def extract_pdf_invoice_urls(html: str) -> list[str]:
     logger.info(f"Found {len(urls)} PDF invoice URLs")
     return urls
 
-def upload_invoice_pdf_to_supabase(pdf_urls: List[str], show: str) -> dict:
+def upload_invoice_pdf_to_supabase(pdf_urls: List[str], user_id:str, show: str) -> dict:
     logger.info(f"Starting PDF upload process for {len(pdf_urls)} URLs with show: {show}")
     public_urls = {}
     
@@ -48,7 +48,7 @@ def upload_invoice_pdf_to_supabase(pdf_urls: List[str], show: str) -> dict:
             logger.info(f"PDF downloaded successfully, size: {len(response.content)} bytes")
 
             id = str(uuid.uuid4())[:8]
-            filename = f"{datetime.utcnow().date().isoformat()}/eml_att_{datetime.utcnow().timestamp()}_{id}.pdf"
+            filename = f"users/{user_id}/{datetime.utcnow().date().isoformat()}/eml_att_{datetime.utcnow().timestamp()}_{id}.pdf"
             logger.info(f"Generated storage filename: {filename}")
 
             # 上传到 Supabase Storage
@@ -58,9 +58,12 @@ def upload_invoice_pdf_to_supabase(pdf_urls: List[str], show: str) -> dict:
             logger.info(f"PDF uploaded successfully to Supabase")
 
             # 获取 Public URL
-            public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename).rstrip('?')
-            public_urls[f"{show}_{id}"] = public_url
-            logger.info(f"Generated public URL: {public_urls}")
+            signed_url_result = supabase.storage.from_(SUPABASE_BUCKET).create_signed_url(filename, expires_in=86400)
+            public_url = signed_url_result["signedURL"]
+            # public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename).rstrip('?')
+            # public_urls[f"{show}_{id}"] = public_url
+            # logger.info(f"Generated public URL: {public_urls}")
+            public_urls[f"{show}_{id}"] = [public_url,filename]
             
         except Exception as e:
             logger.exception(f"Failed to process PDF {i}: {pdf_url} - Error: {str(e)}")

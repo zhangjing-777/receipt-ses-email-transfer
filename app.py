@@ -2,7 +2,16 @@ import os
 import logging
 from datetime import datetime
 from fastapi import FastAPI, Request
-from ses_eml_save.main import upload_to_supabase
+from pydantic import BaseModel
+from typing import Optional
+from ses_eml_save.main import (upload_to_supabase, 
+                               update_receipt, 
+                               UpdateReceiptRequest, 
+                               get_receipt,
+                               GetReceiptRequest,
+                               delete_receipt,
+                               DeleteReceiptRequest
+)
 
 
 
@@ -46,6 +55,20 @@ async def ses_email_transfer(bucket, key, user_id):
         return {"error": f"Upload process failed: {str(e)}", "status": "error"}
 
 
+@app.post("/webhook/update_receipt")
+async def update_receipt_items(request: UpdateReceiptRequest):
+    """根据record_id和user_id更新收据信息接口"""
+    return await update_receipt(request)
+
+@app.post("/webhook/get_receipt")
+async def get_receipt_items(request: GetReceiptRequest):
+    """获取解密后的收据信息"""
+    return await get_receipt(request)
+
+@app.delete("/webhook/delete_receipt")
+async def delete_receipt_items(request: DeleteReceiptRequest):
+    """根据ind和user_id批量删除收据信息"""
+    return await delete_receipt(request)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

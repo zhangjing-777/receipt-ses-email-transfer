@@ -12,11 +12,11 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL") or ""
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or ""
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
+SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET")
 
 logger = logging.getLogger(__name__)
 
-def upload_attachments_to_storage(attachments, bucket="lazy-receipt"):
+def upload_attachments_to_storage(attachments, user_id, bucket=SUPABASE_BUCKET):
     logger.info(f"Starting attachment upload process for {len(attachments)} attachments to bucket: {bucket}")
 
     records = {}
@@ -38,7 +38,7 @@ def upload_attachments_to_storage(attachments, bucket="lazy-receipt"):
 
             date_url = datetime.utcnow().date().isoformat()
             timestamp = datetime.utcnow().isoformat()
-            storage_path = f"{date_url}/{timestamp}_{safe_filename}"
+            storage_path = f"users/{user_id}/{date_url}/{timestamp}_{safe_filename}"
             logger.info(f"Generated storage path: {storage_path}")
 
             logger.info(f"Uploading {filename} to storage at {storage_path}")
@@ -48,10 +48,13 @@ def upload_attachments_to_storage(attachments, bucket="lazy-receipt"):
                 file_options={"content-type": att.get("content_type", "application/octet-stream")}
             )
 
-            # 获取公开 URL
-            public_url = supabase.storage.from_(bucket).get_public_url(storage_path).rstrip('?')
-            logger.info(f"Upload successful. Public URL: {public_url}")
-            records[filename] = public_url
+            # 获取签名URL（24小时有效期）
+            signed_url_result = supabase.storage.from_(SUPABASE_BUCKET).create_signed_url(storage_path, expires_in=86400)
+            public_url = signed_url_result["signedURL"]
+            #public_url = supabase.storage.from_(bucket).get_public_url(storage_path).rstrip('?')
+            #logger.info(f"Upload successful. Public URL: {public_url}")
+            #records[filename] = public_url
+            records[filename] = [public_url,storage_path]
         
         except Exception as e:
             logger.exception(f"Failed to upload attachment {i}/{len(attachments)}: {att.get('filename', 'unknown')} - Error: {str(e)}")

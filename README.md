@@ -2,6 +2,7 @@
 
 一个基于 FastAPI 的智能邮件处理系统，专门用于**自动接收 AWS SES 邮件通知**，解析邮件内容，提取附件，进行 OCR 识别，并将发票信息结构化存储到 Supabase 数据库。
 
+融入了原n8n流程：Delete rawcleaned table/ webhook/swap_buyer_seller/ uploads_name_change
 ---
 
 ## 🚀 核心功能
